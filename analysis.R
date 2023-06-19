@@ -1,29 +1,16 @@
 # R script for analyzing trial-wise, roi-based RSA data
 # Valentina Krenz 2023
 
-
-
-# set paths ####
-
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # Set the working directory to the script location
-
-output_dir <- "./results"
-input_dir <- "./results"
-file_name <- "ERS"
-
-# read in data ####
+# load packages ####
 if(!require(readxl)){
   install.packages("readxl")
 }
-library(readxl) #prepare data #needs to be loaded after Rmisc
+library(readxl) #prepare data 
 if(!require(tidyverse)){
   install.packages("tidyverse")
 }
-library(tidyverse) #prepare data #needs to be loaded after Rmisc
+library(tidyverse) #prepare data 
 
-df <- read_excel(file.path(input_dir, paste0(file_name, ".xlsx"))) 
-
-# run LMM ####
 if(!require(lme4)){
   install.packages("lme4")
 }
@@ -33,6 +20,34 @@ if(!require(lmerTest)){
   install.packages("lmerTest")
 }
 library(lmerTest) #show p_values in mixed effetcs model
+
+if(!require(emmeans)){
+  install.packages("emmeans")
+}
+library(emmeans) #post-hoc tests for ANOVAs and  (generalized) linear mixed models
+
+if(!require(sjPlot)){
+  install.packages("sjPlot")
+}
+library(sjPlot)#plotting (generalized) linear mixed models 
+
+if(!require(afex)){
+  install.packages("afex")
+}
+library(afex) #prepare data #needs to be loaded after Rmisc
+
+# set paths ####
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # Set the working directory to the script location
+
+output_dir <- "./results"
+input_dir <- "./results"
+file_name <- "ERS"
+
+# read in RSA data ####
+df <- read_excel(file.path(input_dir, paste0(file_name, ".xlsx"))) 
+
+# run LMM ####
 
 sub_df <- subset(df, ROI == "AmyBil" | ROI == "HCBil") %>%
   mutate(ROI = factor(ROI, levels=c("HCBil", "AmyBil"), labels=c("hippocampus","amygdala")),
@@ -50,19 +65,10 @@ lmm <- lmer(corr ~ emotion + ROI + (1 | item) + (1 | sj) + emotion:ROI, data = s
 summary(lmm)
 
 # post hoc tests
-if(!require(emmeans)){
-  install.packages("emmeans")
-}
-library(emmeans) #post-hoc tests for ANOVAs and  (generalized) linear mixed models
 model.contrast <- emmeans(lmm, pairwise ~ ROI | emotion, lmer.df = "satterthwaite")
 summary(model.contrast, adjust="FDR")
 
-# plot without emotion factor
-if(!require(sjPlot)){
-  install.packages("sjPlot")
-}
-library(sjPlot)#plotting (generalized) linear mixed models 
-
+# plot lmm
 p <- plot_model(lmm, type = "pred", terms = c("emotion","ROI"),
                 show.data = FALSE, value.offset = TRUE, jitter = TRUE, 
                 dot.size = 4, grid = FALSE, line.size = 2, 
@@ -78,11 +84,6 @@ print(p)
 dev.off()
 
 # run ANOVA #####
-
-if(!require(afex)){
-  install.packages("afex")
-}
-library(afex) #prepare data #needs to be loaded after Rmisc
 
 agg_df <- aggregate(corr ~ emotion + sj + ROI, data = sub_df, FUN = mean) # aggregate over items
 
@@ -105,3 +106,26 @@ summary(model.contrast, adjust="bonferroni")
 
 
 
+
+# run gLMM ####
+
+# read in behavioral data
+behav_df <- read_excel(file.path("./data/behavData.xlsx")) 
+
+# add subsequent memory data to RSA df using sj, emotion, and item as index
+df <- left_join(df, behav_df, by = c("sj", "emotion", "item"))
+
+# add subplot
+sub_df <- subset(df, ROI == "AmyBil")
+
+glmm <- glmer(subsMemory ~ corr * emotion + (1 + corr + emotion | sj) + (1 | item), 
+              data = sub_df, family = binomial)
+summary(glmm)
+
+# plot glmm
+p <- plot_model(glmm, type = "pred", terms = c("corr","emotion"),
+                show.data = FALSE, value.offset = TRUE, jitter = TRUE, 
+                dot.size = 4, grid = FALSE, line.size = 2, 
+                axis.title = c("stimulus emotionality", "Fisher-transformed r"),
+                color=c("#0072B2","firebrick")) + theme_minimal()
+p
