@@ -69,7 +69,7 @@ model.contrast <- emmeans(lmm, pairwise ~ ROI | emotion, lmer.df = "satterthwait
 summary(model.contrast, adjust="FDR")
 
 # plot lmm
-p <- plot_model(lmm, type = "pred", terms = c("emotion","ROI"),
+p <- plot_model(lmm, type = "pred", terms = c("ROI","emotion"),
                 show.data = FALSE, value.offset = TRUE, jitter = TRUE, 
                 dot.size = 4, grid = FALSE, line.size = 2, 
                 axis.title = c("stimulus emotionality", "Fisher-transformed r"),
@@ -104,9 +104,6 @@ summary(model.contrast, adjust="FDR")
 model.contrast <- emmeans(model, pairwise ~ emotion * ROI)
 summary(model.contrast, adjust="bonferroni")
 
-
-
-
 # run gLMM ####
 
 # read in behavioral data
@@ -126,6 +123,5 @@ summary(glmm)
 p <- plot_model(glmm, type = "pred", terms = c("corr","emotion"),
                 show.data = FALSE, value.offset = TRUE, jitter = TRUE, 
                 dot.size = 4, grid = FALSE, line.size = 2, 
-                axis.title = c("stimulus emotionality", "Fisher-transformed r"),
                 color=c("#0072B2","firebrick")) + theme_minimal()
 p
