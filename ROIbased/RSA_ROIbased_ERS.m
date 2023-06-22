@@ -61,7 +61,7 @@ Contrasts.ERS_neutral = NaN(nrBetaMaps);% Encoding-Retrieval-Similarity neutral
 AllContrastNames = fields(Contrasts);% save contrast names
 
 % create array to map stimulus indices to different contrasts
-ImageInds=NaN(420);
+ImageInds=NaN(nrBetaMaps);
 % create 180x420 matrix, where each row of the matrix contains the numbers 
 % 1 to 30, twice, and this pattern is repeated 420 times along the columns
 ImageInds(1:180,:)=repmat(repmat([1:30 1:30]',3,1),1,420); 
@@ -114,7 +114,7 @@ for sj=1:nSjs
     tic % stopwatch timer
     betaPath=[betaDir,SJfolders(sj).name,SubFolder]; % constructs path to the current sj's beta images
     betaFiles=dir([betaPath, '*.nii']); % read in all beta files from the current sj's folder
-    for b=1:numel(betaFiles) % iterate over all beta images of the current sj
+    for b=1:numel(betaFiles) % iterate over all beta images of the current sj %or change to the number of beta maps that you want to load
         betaDat=load_nii([betaPath,betaFiles(b).name]); % load current beta image into workspace
         if b==1
             BetaMaps=zeros([numel(betaFiles),size(betaDat.img)],'single'); % if its the first beta image, initialize a 4D array to hold all beta images of the current sj with dimensions: number of beta images x size of 2d beta image
