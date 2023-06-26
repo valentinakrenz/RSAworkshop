@@ -17,30 +17,24 @@ function compTime = RSA_SL_EES(sj,radius, fisher_transformed)
 % 391:420 unrelated neutral
 % Session constants=421:426;
 
-%% DEFINE PATHS
+%% PATH SETTINGS
+dataFolder='..\data\mriData\'; % go to parent folder and add data folder
+SubFolder='\trialwiseGLM\'; % define data-subfolder name
+outputDir = '.\results\'; % saves results folder in current folder
+mkdir(outputDir); %create output dir
 
-addpath NiftiTools\
-dataFolder='data\mriData\';%change accordingly
-SubFolder='\trialwiseGLM\';
-outputDir = 'results\RSA_SL';
-
-%% READ IN PATHS AND FILES
-
-% Check if the directory exists
-if ~isfolder(outputDir)
-    % Create the directory if it doesn't exist
-    mkdir(outputDir);
-end
-
-SJfolders=dir([dataFolder 'sj*']);
-betaPath=[dataFolder,SJfolders(sj).name,SubFolder]; % analyze sj that is defined by RunSL_inParfor
-betaFiles=dir([betaPath, '*.nii']);
-nii_template = load_nii('beta_0001.nii'); 
-
+SJfolder = fullfile(dataFolder, sprintf('sj%03d', sj)); % analyze sj that is defined by RunSL_inParfor
+betaPath=[SJfolder SubFolder]; 
+betaFiles=dir([betaPath, '*.nii']); %read in images of current sj
+nBetas = 180; % I only want the first 180 betas 
+betaFiles = betaFiles(1:nBetas); % drop the betas after number 180
+nii_template = load_nii('beta_0001.nii'); % reads in template image, can be any of YOUR beta (or t-) images
+disp(['running subject number: ', num2str(sj)]);
 sj 
 tic
 
-for b=1:numel(betaFiles)
+%% READ IN BETAS INTO BETAMAPS
+for b=1:nBetas
     betaDat=load_nii([betaPath,betaFiles(b).name]);
     if b==1
         BetaMaps=zeros([numel(betaFiles),size(betaDat.img)],'single'); % if b==1 BetaMaps is initialized
@@ -49,7 +43,7 @@ for b=1:numel(betaFiles)
 end
 
 %% DEFINE COMPARISONS AND INDICES
-emotions = {'Neg', 'Neu'};
+emotions = {'Neg', 'Neu'}; % first betas in run condition are negative, then neutral
 Neg_SelDat = BetaMaps([1:30, 61:90, 121:150], :, :, :); % select only negative items at encoding
 Neu_SelDat = BetaMaps([31:60, 91:120, 151:180], :, :, :); % select only neutral items at encoding
 % define indices for each run
@@ -60,11 +54,10 @@ Enc3_Inds = 61:90;
 enc_runs = {Enc1_Inds, Enc2_Inds, Enc3_Inds};
 
 %% RUN SEARCHLIGHT FOR EACH CONDITION AND SAVE NIFTI
-
-for e = 1:length(emotions)
-    emotion = emotions{e};
+for e = 1:length(emotions) % first, loop through emotions
+    emotion = emotions{e}; % choose emotion level name from current loop
     
-    if strcmp(emotion, 'Neg')
+    if strcmp(emotion, 'Neg') % select SelDat from current emotion loop
         SelDat = Neg_SelDat;
     elseif strcmp(emotion, 'Neu')
         SelDat = Neu_SelDat;
@@ -83,33 +76,36 @@ for e = 1:length(emotions)
             sameStim_PerSL = NaN(size(SLmask), 'single');
             
             HypMat = eye(length(Inds_1)); % define diagonal
-
+            
             for sl = 1:numel(LinearInds)
-                %tic
-                slInds = SLindsLinear(:, sl);
-                slInds = slInds(~isnan(slInds));
-
-                SL_Patts = SelDat(:, slInds);
-
-                RSM = corr(SL_Patts(Inds_1, :)', SL_Patts(Inds_2, :)');
-                sameStim_mean = mean(RSM(HypMat == 1)); % sim between same item (on-diagonal)
-                diffStim_mean = mean(RSM(HypMat == 0)); % sim between different items(off-diagonal)
-                sameStim_PerSL(LinearInds(sl)) = sameStim_mean;
-                diffStim_PerSL(LinearInds(sl)) = diffStim_mean;
+                
+                if NrOfValidVoxelsPerSL(sl) > 9 % define number of minimum voxels that have to be in searchlight
+                    
+                    slInds = SLindsLinear(:, sl);
+                    slInds = slInds(~isnan(slInds));
+                    
+                    SL_Patts = SelDat(:, slInds);
+                    
+                    RSM = corr(SL_Patts(Inds_1, :)', SL_Patts(Inds_2, :)');
+                    sameStim_mean = mean(RSM(HypMat == 1)); % sim between same item (on-diagonal)
+                    diffStim_mean = mean(RSM(HypMat == 0)); % sim between different items(off-diagonal)
+                    sameStim_PerSL(LinearInds(sl)) = sameStim_mean;
+                    diffStim_PerSL(LinearInds(sl)) = diffStim_mean;
+                end
             end
 
-            if fisher_transformed == 1
+            if fisher_transformed == 1 % fisher-transform r values
                 
                 sameStim_PerSL = atanh(sameStim_PerSL);
                 diffStim_PerSL = atanh(diffStim_PerSL);
                 value = 'FisherZ';
             
-            elseif fisher_transformed == 0
+            elseif fisher_transformed == 0 % no Fisher-transformation
                 value = 'PearsonR';
             end 
             
             % Save each SL_PerSL_fishertransformed with the corresponding
-            % emotion and run-combination in ffilename
+            % emotion and run-combination in filename
             nii_template.img = sameStim_PerSL;
             save_nii(nii_template, [outputDir filesep 'EES_sameStim_PerSL_' emotion '_Enc' num2str(i) 'Enc' num2str(j) '_' value '_Rad' num2str(radius) '_SJ' sprintf('%03d', sj) '.nii']);
 
@@ -119,5 +115,7 @@ for e = 1:length(emotions)
         end
     end
 end
+
+disp(['done with subject number: ', num2str(sj)]);
 
 compTime=toc

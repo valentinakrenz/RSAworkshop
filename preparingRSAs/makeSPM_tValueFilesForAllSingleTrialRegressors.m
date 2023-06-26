@@ -18,8 +18,6 @@ for sub = subjects
     
     %try
     clear matlabbatch;
-    
-%     cd \data\mriData\; %include this so that dir-function finds the VPfolder
 
     VPFolder = dir(fullfile(data_dir, strcat('sj',sprintf('%03d', sub))));
     
