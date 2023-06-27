@@ -2,7 +2,7 @@
  practice code and data for the workshop "Representational Similarity Analyses of fMRI data" 2023 at University Hamburg for members of the Research Training Group "Emotional Learning and Memory"
 
  ## ./Niftitools 
- includes some functions that are used from working with nifti-images (Copyright (c) 2014, Jimmy Shen)
+ includes some functions that are used for working with nifti-images (Copyright (c) 2014, Jimmy Shen)
 
  ## ./ROIbased
  includes scripts for computing and extracting model-based RSAs from regions of interest (ROIs)
