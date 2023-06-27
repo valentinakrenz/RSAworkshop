@@ -8,10 +8,10 @@
  includes scripts for computing and extracting model-based RSAs from regions of interest (ROIs)
 
  ## ./ROIs
- example regions of interest, mostly deriped by the Harvard-Oxford-Atlas and resized to the example beta images
+ example regions of interest, mostly based on the Harvard-Oxford-Atlas and resized to the example beta images
 
  ## ./SLbased
- includes scripts for computing searchlight based RSAs and exporting the results in nifti-images
+ includes scripts for computing searchlight-based RSAs and exporting the results in nifti-images
 
  ## ./data
  example data that can be used for trying out the scripts
