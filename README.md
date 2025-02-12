@@ -17,7 +17,7 @@
  example data that can be used for trying out the scripts
 
  ## ./modelbased
- includes scripts for comparing model-RSAs with conceptual models
+ includes scripts for comparing neural RSMs with conceptual models
 
  ## ./preparingRSAs
  example scripts for setting up single-trial and regular, condition-wise first-level analyses using SPM batch-scripts
